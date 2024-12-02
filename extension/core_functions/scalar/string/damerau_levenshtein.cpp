@@ -51,6 +51,7 @@ static idx_t DamerauLevenshteinDistance(const string_t &source, const string_t &
 		// keeps track of the largest string indices of target string matching current source character
 		// same as DB in LW paper
 		idx_t largest_target_chr_matching;
+		idx_t diagonal, insert, delet, biggy;
 		largest_target_chr_matching = 0;
 		for (idx_t target_idx = 0; target_idx < target_len; target_idx++) {
 			// correspond to i1 and j1 in LW paper respectively
@@ -69,14 +70,18 @@ static idx_t DamerauLevenshteinDistance(const string_t &source, const string_t &
 			} else {
 				cost_diagonal_shift = COST_SUBSTITUTION;
 			}
-			distance[source_idx + 2][target_idx + 2] = MinValue(
-			    distance[source_idx + 1][target_idx + 1] + cost_diagonal_shift,
-			    MinValue(distance[source_idx + 2][target_idx + 1] + COST_INSERTION,
-			             MinValue(distance[source_idx + 1][target_idx + 2] + COST_DELETION,
-			                      distance[largest_source_chr_matching_target][largest_target_chr_matching_source] +
+			diagonal = distance[source_idx + 1][target_idx + 1] + cost_diagonal_shift;
+			insert = distance[source_idx + 2][target_idx + 1] + COST_INSERTION;
+			delet = distance[source_idx + 1][target_idx + 2] + COST_DELETION;
+			biggy = distance[largest_source_chr_matching_target][largest_target_chr_matching_source] +
 			                          (source_idx - largest_source_chr_matching_target) * COST_DELETION +
 			                          COST_TRANSPOSITION +
-			                          (target_idx - largest_target_chr_matching_source) * COST_INSERTION)));
+			                          (target_idx - largest_target_chr_matching_source) * COST_INSERTION;
+			distance[source_idx + 2][target_idx + 2] = MinValue(
+			    diagonal,
+			    MinValue(insert,
+			             MinValue(delet,
+			                      biggy)));
 		}
 		largest_source_chr_matching[source_str[source_idx]] = source_idx + 1;
 	}
