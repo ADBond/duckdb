@@ -32,7 +32,10 @@ static idx_t DamerauLevenshteinDistance(const string_t &source, const string_t &
 	const auto inf = source_len * COST_DELETION + target_len * COST_INSERTION + 1;
 	// minimum edit distance from prefix of source string to prefix of target string
 	// same object as H in LW paper (with indices offset by 1)
-	vector<vector<idx_t>> distance(source_len + 2, vector<idx_t>(target_len + 2, inf));
+	// flat vector:
+	// data[i * cols + j];
+	const idx_t cols = target_len + 2;
+	vector<idx_t> distance_flat((source_len + 2) * cols, inf);
 	// keeps track of the largest string indices of source string matching each character
 	// same as DA in LW paper
 	map<char, idx_t> largest_source_chr_matching;
@@ -40,11 +43,11 @@ static idx_t DamerauLevenshteinDistance(const string_t &source, const string_t &
 	// initialise row/column corresponding to zero-length strings
 	// partial string -> empty requires a deletion for each character
 	for (idx_t source_idx = 0; source_idx <= source_len; source_idx++) {
-		distance[source_idx + 1][1] = source_idx * COST_DELETION;
+		distance_flat[(source_idx + 1)*cols * 1] = source_idx * COST_DELETION;
 	}
 	// and empty -> partial string means simply inserting characters
 	for (idx_t target_idx = 1; target_idx <= target_len; target_idx++) {
-		distance[1][target_idx + 1] = target_idx * COST_INSERTION;
+		distance_flat[cols + target_idx + 1] = target_idx * COST_INSERTION;
 	}
 	// loop through string indices - these are offset by 2 from distance indices
 	for (idx_t source_idx = 0; source_idx < source_len; source_idx++) {
@@ -70,14 +73,14 @@ static idx_t DamerauLevenshteinDistance(const string_t &source, const string_t &
 			} else {
 				cost_diagonal_shift = COST_SUBSTITUTION;
 			}
-			diagonal = distance[source_idx + 1][target_idx + 1] + cost_diagonal_shift;
-			insert = distance[source_idx + 2][target_idx + 1] + COST_INSERTION;
-			delet = distance[source_idx + 1][target_idx + 2] + COST_DELETION;
-			biggy = distance[largest_source_chr_matching_target][largest_target_chr_matching_source] +
+			diagonal = distance_flat[(source_idx + 1)*cols + target_idx + 1] + cost_diagonal_shift;
+			insert = distance_flat[(source_idx + 2)*cols + target_idx + 1] + COST_INSERTION;
+			delet = distance_flat[(source_idx + 1)*cols + target_idx + 2] + COST_DELETION;
+			biggy = distance_flat[largest_source_chr_matching_target*cols + largest_target_chr_matching_source] +
 			                          (source_idx - largest_source_chr_matching_target) * COST_DELETION +
 			                          COST_TRANSPOSITION +
 			                          (target_idx - largest_target_chr_matching_source) * COST_INSERTION;
-			distance[source_idx + 2][target_idx + 2] = MinValue(
+			distance_flat[(source_idx + 2)*cols + target_idx + 2] = MinValue(
 			    diagonal,
 			    MinValue(insert,
 			             MinValue(delet,
@@ -85,7 +88,7 @@ static idx_t DamerauLevenshteinDistance(const string_t &source, const string_t &
 		}
 		largest_source_chr_matching[source_str[source_idx]] = source_idx + 1;
 	}
-	return distance[source_len + 1][target_len + 1];
+	return distance_flat[(source_len + 1) * target_len + 1];
 }
 
 static int64_t DamerauLevenshteinScalarFunction(Vector &result, const string_t source, const string_t target) {
