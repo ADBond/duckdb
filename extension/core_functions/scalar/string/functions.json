@@ -128,9 +128,9 @@
     },
     {
         "name": "levenshtein",
-        "parameters": "str1,str2",
+        "parameters": "str1,str2,threshold",
         "description": "The minimum number of single-character edits (insertions, deletions or substitutions) required to change one string to the other. Different case is considered different",
-        "example": "levenshtein('duck','db')",
+        "example": "levenshtein('duck','db',2)",
         "type": "scalar_function",
         "aliases": ["editdist3"]
     },

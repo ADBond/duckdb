@@ -12,9 +12,11 @@ namespace duckdb {
 // Note: A first implementation using the array algorithm version resulted in an error raised by duckdb
 // (too muach memory usage)
 
-static idx_t LevenshteinDistance(const string_t &txt, const string_t &tgt) {
+static idx_t LevenshteinDistance(const string_t &txt, const string_t &tgt, const int64_t &threshold = -1) {
 	auto txt_len = txt.GetSize();
 	auto tgt_len = tgt.GetSize();
+	// TODO: something not this
+	auto true_threshold = threshold == -1 ? std::max({txt_len, tgt_len}) : threshold;
 
 	// If one string is empty, the distance equals the length of the other string
 	if (txt_len == 0) {
@@ -56,29 +58,34 @@ static idx_t LevenshteinDistance(const string_t &txt, const string_t &tgt) {
 
 			distances1[pos_tgt + 1] = MinValue(cost_deletion, MinValue(cost_substitution, cost_insertion));
 		}
+		auto min_distance = std::min_element(std::begin(distances1), std::end(distances1));
+		if ((*min_distance) > true_threshold){
+			return true_threshold + 1;
+		}
 		// copy distances1 (current row) to distances0 (previous row) for next iteration
 		// since data in distances1 is always invalidated, a swap without copy is more efficient
 		distances0 = distances1;
 	}
 
-	return distances0[tgt_len];
+	return distances0[tgt_len] <= true_threshold ? distances0[tgt_len] : true_threshold+ 1;
 }
 
-static int64_t LevenshteinScalarFunction(Vector &result, const string_t str, string_t tgt) {
-	return (int64_t)LevenshteinDistance(str, tgt);
+static int64_t LevenshteinScalarFunction(Vector &result, const string_t str, string_t tgt, int64_t thresh) {
+	return (int64_t)LevenshteinDistance(str, tgt, thresh);
 }
 
 static void LevenshteinFunction(DataChunk &args, ExpressionState &state, Vector &result) {
 	auto &str_vec = args.data[0];
 	auto &tgt_vec = args.data[1];
+	auto &thresh = args.data[2];
 
-	BinaryExecutor::Execute<string_t, string_t, int64_t>(
-	    str_vec, tgt_vec, result, args.size(),
-	    [&](string_t str, string_t tgt) { return LevenshteinScalarFunction(result, str, tgt); });
+	TernaryExecutor::Execute<string_t, string_t, int64_t, int64_t>(
+	    str_vec, tgt_vec, thresh, result, args.size(),
+	    [&](string_t str, string_t tgt, int64_t thresh) { return LevenshteinScalarFunction(result, str, tgt, thresh); });
 }
 
 ScalarFunction LevenshteinFun::GetFunction() {
-	return ScalarFunction({LogicalType::VARCHAR, LogicalType::VARCHAR}, LogicalType::BIGINT, LevenshteinFunction);
+	return ScalarFunction({LogicalType::VARCHAR, LogicalType::VARCHAR, LogicalType::BIGINT}, LogicalType::BIGINT, LevenshteinFunction);
 }
 
 } // namespace duckdb
