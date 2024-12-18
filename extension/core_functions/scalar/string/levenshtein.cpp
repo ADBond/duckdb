@@ -70,18 +70,25 @@ static idx_t LevenshteinDistance(const string_t &txt, const string_t &tgt, const
 	return distances0[tgt_len] <= true_threshold ? distances0[tgt_len] : true_threshold+ 1;
 }
 
-static int64_t LevenshteinScalarFunction(Vector &result, const string_t str, string_t tgt, int64_t thresh) {
+static int64_t LevenshteinScalarFunction(Vector &result, const string_t str, string_t tgt, int64_t thresh = -1) {
 	return (int64_t)LevenshteinDistance(str, tgt, thresh);
 }
 
 static void LevenshteinFunction(DataChunk &args, ExpressionState &state, Vector &result) {
 	auto &str_vec = args.data[0];
 	auto &tgt_vec = args.data[1];
-	auto &thresh = args.data[2];
-
-	TernaryExecutor::Execute<string_t, string_t, int64_t, int64_t>(
-	    str_vec, tgt_vec, thresh, result, args.size(),
-	    [&](string_t str, string_t tgt, int64_t thresh) { return LevenshteinScalarFunction(result, str, tgt, thresh); });
+	D_ASSERT(args.ColumnCount() == 2 || args.ColumnCount() == 3);
+	if (args.ColumnCount() == 2) {
+		BinaryExecutor::Execute<string_t, string_t, double>(
+			str_vec, tgt_vec, result, args.size(),
+			[&](const string_t &str, const string_t &tgt) { return LevenshteinScalarFunction(result, str, tgt);});
+		return;
+	} else {
+		auto &thresh = args.data[2];
+		TernaryExecutor::Execute<string_t, string_t, int64_t, int64_t>(
+			str_vec, tgt_vec, thresh, result, args.size(),
+			[&](string_t str, string_t tgt, int64_t thresh) { return LevenshteinScalarFunction(result, str, tgt, thresh); });
+	}
 }
 
 ScalarFunction LevenshteinFun::GetFunction() {
