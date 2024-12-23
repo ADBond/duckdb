@@ -80,7 +80,7 @@ static void LevenshteinFunction(DataChunk &args, ExpressionState &state, Vector 
 	auto &tgt_vec = args.data[1];
 	D_ASSERT(args.ColumnCount() == 2 || args.ColumnCount() == 3);
 	if (args.ColumnCount() == 2) {
-		BinaryExecutor::Execute<string_t, string_t, double>(
+		BinaryExecutor::Execute<string_t, string_t, int64_t>(
 			str_vec, tgt_vec, result, args.size(),
 			[&](const string_t &str, const string_t &tgt) { return LevenshteinScalarFunction(result, str, tgt, -1);});
 		return;
