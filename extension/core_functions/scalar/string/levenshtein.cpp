@@ -60,7 +60,7 @@ static idx_t LevenshteinDistance(const string_t &txt, const string_t &tgt, const
 			distances1[pos_tgt + 1] = MinValue(cost_deletion, MinValue(cost_substitution, cost_insertion));
 		}
 		auto min_distance = std::min_element(std::begin(distances1), std::end(distances1));
-		if ((*min_distance) > true_threshold){
+		if ((*min_distance) > true_threshold) {
 			return fail_return_value;
 		}
 		// copy distances1 (current row) to distances0 (previous row) for next iteration
@@ -81,17 +81,17 @@ static void LevenshteinFunction(DataChunk &args, ExpressionState &state, Vector 
 	D_ASSERT(args.ColumnCount() == 2 || args.ColumnCount() == 3);
 	if (args.ColumnCount() == 2) {
 		BinaryExecutor::Execute<string_t, string_t, int64_t>(
-			str_vec, tgt_vec, result, args.size(),
-			[&](const string_t &str, const string_t &tgt) { return LevenshteinScalarFunction(result, str, tgt, -1);});
+		    str_vec, tgt_vec, result, args.size(),
+		    [&](const string_t &str, const string_t &tgt) { return LevenshteinScalarFunction(result, str, tgt, -1); });
 		return;
 	} else {
 		auto &thresh = args.data[2];
 		TernaryExecutor::Execute<string_t, string_t, int64_t, int64_t>(
-			str_vec, tgt_vec, thresh, result, args.size(),
-			[&](string_t str, string_t tgt, int64_t thresh) { return LevenshteinScalarFunction(result, str, tgt, thresh); });
+		    str_vec, tgt_vec, thresh, result, args.size(), [&](string_t str, string_t tgt, int64_t thresh) {
+			    return LevenshteinScalarFunction(result, str, tgt, thresh);
+		    });
 	}
 }
-
 
 // ScalarFunctionSet JaroWinklerSimilarityFun::GetFunctions() {
 // 	ScalarFunctionSet jaroWinkler;
@@ -111,7 +111,8 @@ ScalarFunctionSet LevenshteinFun::GetFunctions() {
 	ScalarFunctionSet levenshtein;
 
 	const auto list_type = LogicalType::LIST(LogicalType::VARCHAR);
-	auto fun = ScalarFunction({LogicalType::VARCHAR, LogicalType::VARCHAR, LogicalType::BIGINT}, LogicalType::BIGINT, LevenshteinFunction);
+	auto fun = ScalarFunction({LogicalType::VARCHAR, LogicalType::VARCHAR, LogicalType::BIGINT}, LogicalType::BIGINT,
+	                          LevenshteinFunction);
 	levenshtein.AddFunction(fun);
 
 	fun = ScalarFunction({LogicalType::VARCHAR, LogicalType::VARCHAR}, LogicalType::BIGINT, LevenshteinFunction);

@@ -43,7 +43,7 @@ static idx_t DamerauLevenshteinDistance(const string_t &source, const string_t &
 	// initialise row/column corresponding to zero-length strings
 	// partial string -> empty requires a deletion for each character
 	for (idx_t source_idx = 0; source_idx <= source_len; source_idx++) {
-		distance_flat[(source_idx + 1)*cols * 1] = source_idx * COST_DELETION;
+		distance_flat[(source_idx + 1) * cols * 1] = source_idx * COST_DELETION;
 	}
 	// and empty -> partial string means simply inserting characters
 	for (idx_t target_idx = 1; target_idx <= target_len; target_idx++) {
@@ -73,18 +73,14 @@ static idx_t DamerauLevenshteinDistance(const string_t &source, const string_t &
 			} else {
 				cost_diagonal_shift = COST_SUBSTITUTION;
 			}
-			diagonal = distance_flat[(source_idx + 1)*cols + target_idx + 1] + cost_diagonal_shift;
-			insert = distance_flat[(source_idx + 2)*cols + target_idx + 1] + COST_INSERTION;
-			delet = distance_flat[(source_idx + 1)*cols + target_idx + 2] + COST_DELETION;
-			biggy = distance_flat[largest_source_chr_matching_target*cols + largest_target_chr_matching_source] +
-			                          (source_idx - largest_source_chr_matching_target) * COST_DELETION +
-			                          COST_TRANSPOSITION +
-			                          (target_idx - largest_target_chr_matching_source) * COST_INSERTION;
-			distance_flat[(source_idx + 2)*cols + target_idx + 2] = MinValue(
-			    diagonal,
-			    MinValue(insert,
-			             MinValue(delet,
-			                      biggy)));
+			diagonal = distance_flat[(source_idx + 1) * cols + target_idx + 1] + cost_diagonal_shift;
+			insert = distance_flat[(source_idx + 2) * cols + target_idx + 1] + COST_INSERTION;
+			delet = distance_flat[(source_idx + 1) * cols + target_idx + 2] + COST_DELETION;
+			biggy = distance_flat[largest_source_chr_matching_target * cols + largest_target_chr_matching_source] +
+			        (source_idx - largest_source_chr_matching_target) * COST_DELETION + COST_TRANSPOSITION +
+			        (target_idx - largest_target_chr_matching_source) * COST_INSERTION;
+			distance_flat[(source_idx + 2) * cols + target_idx + 2] =
+			    MinValue(diagonal, MinValue(insert, MinValue(delet, biggy)));
 		}
 		largest_source_chr_matching[source_str[source_idx]] = source_idx + 1;
 	}
