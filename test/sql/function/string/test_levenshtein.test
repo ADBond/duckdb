@@ -285,3 +285,39 @@ NULL
 2
 NULL
 NULL
+
+
+query I
+SELECT levenshtein('sitting', 'kitten', 3)
+----
+3
+
+query I
+SELECT levenshtein('sitting', 'kitten', 1)
+----
+2
+
+query I
+SELECT levenshtein('sitting', 'kitten', 4)
+----
+3
+
+query I
+SELECT levenshtein('hallo', 'hoi', 4)
+----
+4
+
+query I
+SELECT levenshtein('hallo', 'hoi', 2)
+----
+3
+
+query I
+SELECT levenshtein('hallo', 'hoi', 1)
+----
+2
+
+query I
+SELECT levenshtein('hallo', 'hoi', 10)
+----
+4
