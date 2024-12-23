@@ -216,7 +216,7 @@ struct LevenshteinFun {
 	static constexpr const char *Description = "The minimum number of single-character edits (insertions, deletions or substitutions) required to change one string to the other. Different case is considered different";
 	static constexpr const char *Example = "levenshtein('duck','db',2)";
 
-	static ScalarFunction GetFunction();
+	static ScalarFunctionSet GetFunctions();
 };
 
 struct Editdist3Fun {

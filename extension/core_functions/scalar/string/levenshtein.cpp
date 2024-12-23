@@ -16,7 +16,8 @@ static idx_t LevenshteinDistance(const string_t &txt, const string_t &tgt, const
 	auto txt_len = txt.GetSize();
 	auto tgt_len = tgt.GetSize();
 	// TODO: something not this
-	auto true_threshold = threshold == -1 ? std::max({txt_len, tgt_len}) : threshold;
+	auto true_threshold = (threshold == -1 ? std::max({txt_len, tgt_len}) : threshold);
+	const idx_t fail_return_value = true_threshold + 1;
 
 	// If one string is empty, the distance equals the length of the other string
 	if (txt_len == 0) {
@@ -60,14 +61,14 @@ static idx_t LevenshteinDistance(const string_t &txt, const string_t &tgt, const
 		}
 		auto min_distance = std::min_element(std::begin(distances1), std::end(distances1));
 		if ((*min_distance) > true_threshold){
-			return true_threshold + 1;
+			return fail_return_value;
 		}
 		// copy distances1 (current row) to distances0 (previous row) for next iteration
 		// since data in distances1 is always invalidated, a swap without copy is more efficient
 		distances0 = distances1;
 	}
 
-	return distances0[tgt_len] <= true_threshold ? distances0[tgt_len] : true_threshold+ 1;
+	return distances0[tgt_len] <= true_threshold ? distances0[tgt_len] : fail_return_value;
 }
 
 static int64_t LevenshteinScalarFunction(Vector &result, const string_t str, string_t tgt, int64_t thresh = -1) {
@@ -81,7 +82,7 @@ static void LevenshteinFunction(DataChunk &args, ExpressionState &state, Vector 
 	if (args.ColumnCount() == 2) {
 		BinaryExecutor::Execute<string_t, string_t, double>(
 			str_vec, tgt_vec, result, args.size(),
-			[&](const string_t &str, const string_t &tgt) { return LevenshteinScalarFunction(result, str, tgt);});
+			[&](const string_t &str, const string_t &tgt) { return LevenshteinScalarFunction(result, str, tgt, -1);});
 		return;
 	} else {
 		auto &thresh = args.data[2];
@@ -91,8 +92,31 @@ static void LevenshteinFunction(DataChunk &args, ExpressionState &state, Vector 
 	}
 }
 
-ScalarFunction LevenshteinFun::GetFunction() {
-	return ScalarFunction({LogicalType::VARCHAR, LogicalType::VARCHAR, LogicalType::BIGINT}, LogicalType::BIGINT, LevenshteinFunction);
+
+// ScalarFunctionSet JaroWinklerSimilarityFun::GetFunctions() {
+// 	ScalarFunctionSet jaroWinkler;
+
+// 	const auto list_type = LogicalType::LIST(LogicalType::VARCHAR);
+// 	auto fun = ScalarFunction({LogicalType::VARCHAR, LogicalType::VARCHAR}, LogicalType::DOUBLE, JaroWinklerFunction);
+// 	jaroWinkler.AddFunction(fun);
+
+// 	fun = ScalarFunction({LogicalType::VARCHAR, LogicalType::VARCHAR, LogicalType::DOUBLE}, LogicalType::DOUBLE,
+// 	                     JaroWinklerFunction);
+// 	jaroWinkler.AddFunction(fun);
+// 	return jaroWinkler;
+// }
+
+ScalarFunctionSet LevenshteinFun::GetFunctions() {
+
+	ScalarFunctionSet levenshtein;
+
+	const auto list_type = LogicalType::LIST(LogicalType::VARCHAR);
+	auto fun = ScalarFunction({LogicalType::VARCHAR, LogicalType::VARCHAR, LogicalType::BIGINT}, LogicalType::BIGINT, LevenshteinFunction);
+	levenshtein.AddFunction(fun);
+
+	fun = ScalarFunction({LogicalType::VARCHAR, LogicalType::VARCHAR}, LogicalType::BIGINT, LevenshteinFunction);
+	levenshtein.AddFunction(fun);
+	return levenshtein;
 }
 
 } // namespace duckdb
